@@ -10,6 +10,7 @@
   body {font-family:sans-serif;background-color:#f4f4f4;padding:0;margin:0;}
   #top-bar{background:#fff;padding:10px 20px;border-bottom:1px solid #ddd;display:flex;align-items:center;justify-content:center;position:relative;}
   #top-bar h2{margin:0; font-size:1.2em; color:#333;}
+  .update-time {position:absolute; left:20px; font-size:14px; color:#666;}
   #top-bar button{position:absolute; right:20px; padding:8px 12px;border-radius:4px;border:1px solid #ccc;font-size:14px;background-color:#6c757d;color:white;cursor:pointer;}
   #top-bar button:hover{background-color:#5a6268;}
   #calendar-container{padding:20px;background:#fff;margin:20px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
@@ -40,7 +41,11 @@
 </style>
 </head>
 <body>
-<div id="top-bar"><h2>キッチンカー出店カレンダー</h2><button id="show-list-button">予定店舗一覧</button></div>
+<div id="top-bar">
+    <div class="update-time">更新：4/25　18：20</div>
+    <h2>キッチンカー出店カレンダー</h2>
+    <button id="show-list-button">予定店舗一覧</button>
+</div>
 <div id="calendar-container"><div id="calendar"></div></div>
 <div id="day-hover-popup"></div>
 <div id="event-list-popup" class="popup-overlay">
@@ -186,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const desc = event.extendedProps.description || '説明はありません';
         document.getElementById('detail-description').textContent = desc;
         
-        // ★ [追加] Instagramリンクの処理
         const instagramContainer = document.getElementById('instagram-container');
         const instagramLink = document.getElementById('detail-instagram-link');
         const instagramUrl = event.extendedProps.instagramUrl;
