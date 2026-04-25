@@ -9,7 +9,7 @@
 <style>
   body {font-family:sans-serif;background-color:#f4f4f4;padding:0;margin:0;}
   
-  /* PC用（デフォルト）のヘッダーレイアウト（Flexboxを使用） */
+  /* ヘッダーレイアウト */
   #top-bar {background:#fff; padding:10px 20px; border-bottom:1px solid #ddd; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
   .update-time {font-size:14px; color:#666; white-space:nowrap;}
   #top-bar h2 {margin:0; font-size:1.2em; color:#333; text-align:center; flex:1 1 auto; min-width:200px;}
@@ -18,10 +18,20 @@
   
   #calendar-container {padding:20px; background:#fff; margin:20px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
   .fc .fc-daygrid-day-frame {min-height:120px;}
+  
+  /* 通常カレンダー時の土日祝カラー */
   .sunday-holiday {background-color:#ffe8e8;}
   .saturday {background-color:#eaf4ff;}
-  .fc-event {cursor:pointer; border:none!important; padding:4px 6px!important; border-radius:4px!important; font-size:0.8em!important;}
   .fc-day-today {background-color:#fff8e1!important;}
+  
+  /* ★スマホ(リスト)時の土日祝カラーとテキスト色 */
+  .fc-list-day.sunday-holiday .fc-list-day-cushion {background-color:#ffe8e8 !important; color:#d32f2f !important;}
+  .fc-list-day.saturday .fc-list-day-cushion {background-color:#eaf4ff !important; color:#0056b3 !important;}
+  
+  /* ★スマホ(リスト)時の日付横の時間表示用スタイル */
+  .list-day-time {font-size: 0.85em; font-weight: bold; color: #e67e22; margin-left: 10px; background: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 4px;}
+
+  .fc-event {cursor:pointer; border:none!important; padding:4px 6px!important; border-radius:4px!important; font-size:0.8em!important;}
   
   /* ポップアップ周りのスタイル */
   .popup-overlay {position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index:1000;}
@@ -48,27 +58,27 @@
   .fc .fc-daygrid-day-number {float:none !important; padding:0 !important;}
   .fc .day-cell-time {font-size:0.7em; font-weight:bold; color:#e67e22; line-height:1; margin-right:auto;}
 
-  /* ★ スマホ画面（幅600px以下）向けのレイアウト変更 */
-  @media screen and (max-width: 600px) {
+  /* スマホ画面（幅768px以下）向けの基本レイアウト変更 */
+  @media screen and (max-width: 768px) {
       #top-bar {flex-direction:column; align-items:center; text-align:center;}
       #top-bar h2 {order:1; font-size:1.1em; margin-bottom:5px; width:100%;}
       .update-time {order:2; font-size:12px; margin-bottom:10px;}
       #top-bar button {order:3; width:100%; padding:12px; font-size:16px;}
-      
       #calendar-container {margin:10px; padding:10px;}
-      .fc .fc-toolbar {flex-direction:column; gap:10px;} /* カレンダー上部ツールバーも縦並びに */
+      .fc .fc-toolbar {flex-direction:column; gap:10px;}
       .fc .fc-toolbar-title {font-size:1.2em !important;}
   }
 </style>
 </head>
 <body>
 <div id="top-bar">
-    <div class="update-time">更新：4/25　21：59</div>
+    <div class="update-time">更新：4/25　22：50</div>
     <h2>キッチンカー出店カレンダー</h2>
     <button id="show-list-button">予定店舗一覧</button>
 </div>
 <div id="calendar-container"><div id="calendar"></div></div>
 <div id="day-hover-popup"></div>
+
 <div id="event-list-popup" class="popup-overlay">
   <div class="popup-content">
     <div class="popup-header">
@@ -81,6 +91,7 @@
     <div class="popup-footer"><button id="close-list-popup-button">閉じる</button></div>
   </div>
 </div>
+
 <div id="detail-popup" class="popup-overlay">
   <div class="popup-content">
     <div class="popup-header"><h2>出店詳細</h2></div>
@@ -98,6 +109,7 @@
     <div class="popup-footer"><button id="close-detail-popup-button">閉じる</button></div>
   </div>
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
@@ -136,17 +148,34 @@ document.addEventListener('DOMContentLoaded', function() {
         hoverPopup.style.display = 'none';
     }
 
+    const initialViewMode = window.innerWidth < 768 ? 'listMonth' : 'dayGridMonth';
+
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'ja',
         headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
-        initialView: 'dayGridMonth',
+        initialView: initialViewMode,
         firstDay: 1,
         events: events,
         editable: false,
         eventClick: info => openDetailPopup(info.event),
         dayMaxEvents: true,
         displayEventTime: false,
+        
+        windowResize: function(arg) {
+            if (window.innerWidth < 768) {
+                if (calendar.view.type !== 'listMonth') {
+                    calendar.changeView('listMonth');
+                }
+            } else {
+                if (calendar.view.type !== 'dayGridMonth') {
+                    calendar.changeView('dayGridMonth');
+                }
+            }
+        },
+
         dayCellDidMount: function(arg) {
+            if (calendar.view.type !== 'dayGridMonth') return; 
+            
             const existingTimeEl = arg.el.querySelector('.day-cell-time');
             if (existingTimeEl) {
                 existingTimeEl.remove();
@@ -174,26 +203,63 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         datesSet: info => {
-            applyDateStyles(info);
-            addDayHoverListeners();
+            applyDateStyles(info); // PC用、スマホ用両方で色分け処理を呼び出す
+            
+            if (calendar.view.type === 'dayGridMonth') {
+                addDayHoverListeners();
+            }
         },
         viewDidMount: () => {
-             addDayHoverListeners();
+            if (calendar.view.type === 'dayGridMonth') {
+                addDayHoverListeners();
+            }
         }
     });
     calendar.render();
 
     function applyDateStyles(dateInfo) {
-        document.querySelectorAll('.saturday, .sunday-holiday').forEach(c => c.classList.remove('saturday', 'sunday-holiday'));
+        // --- 1. 通常カレンダー（PC）の色分け ---
+        document.querySelectorAll('.fc-daygrid-day.saturday, .fc-daygrid-day.sunday-holiday').forEach(c => c.classList.remove('saturday', 'sunday-holiday'));
+        
+        // --- 2. リストカレンダー（スマホ）の色分けと時間表示のリセット ---
+        document.querySelectorAll('.fc-list-day.saturday, .fc-list-day.sunday-holiday').forEach(c => c.classList.remove('saturday', 'sunday-holiday'));
+        document.querySelectorAll('.list-day-time').forEach(el => el.remove());
+
         let current = new Date(dateInfo.start);
         while (current < dateInfo.end) {
             const dateStr = `${current.getFullYear()}-${('0' + (current.getMonth() + 1)).slice(-2)}-${('0' + current.getDate()).slice(-2)}`;
-            const dayCell = document.querySelector(`.fc-day[data-date="${dateStr}"]`);
-            if (dayCell) {
-                const dayOfWeek = current.getDay();
-                const isHoliday = JapaneseHolidays.isHoliday(current);
-                if (isHoliday || dayOfWeek === 0) dayCell.classList.add('sunday-holiday');
-                else if (dayOfWeek === 6) dayCell.classList.add('saturday');
+            const dayOfWeek = current.getDay();
+            const isHoliday = JapaneseHolidays.isHoliday(current);
+            
+            // PC表示のセルへの適用
+            const gridDayCell = document.querySelector(`.fc-daygrid-day[data-date="${dateStr}"]`);
+            if (gridDayCell) {
+                if (isHoliday || dayOfWeek === 0) gridDayCell.classList.add('sunday-holiday');
+                else if (dayOfWeek === 6) gridDayCell.classList.add('saturday');
+            }
+
+            // スマホリスト表示の行への適用＆時間表示の追加
+            const listDayRow = document.querySelector(`.fc-list-day[data-date="${dateStr}"]`);
+            if (listDayRow) {
+                if (isHoliday || dayOfWeek === 0) listDayRow.classList.add('sunday-holiday');
+                else if (dayOfWeek === 6) listDayRow.classList.add('saturday');
+                
+                // その日のイベント時間を取得して日付の横に追加
+                const dayEvents = events.filter(ev => ev.start && ev.start.startsWith(dateStr));
+                if (dayEvents.length > 0) {
+                    const firstEvent = dayEvents[0];
+                    const start = new Date(firstEvent.start);
+                    const end = new Date(firstEvent.end);
+                    const timeStr = `${('0'+start.getHours()).slice(-2)}:${('0'+start.getMinutes()).slice(-2)} - ${('0'+end.getHours()).slice(-2)}:${('0'+end.getMinutes()).slice(-2)}`;
+                    
+                    const textContainer = listDayRow.querySelector('.fc-list-day-text');
+                    if (textContainer) {
+                        const timeSpan = document.createElement('span');
+                        timeSpan.className = 'list-day-time';
+                        timeSpan.innerText = timeStr;
+                        textContainer.appendChild(timeSpan);
+                    }
+                }
             }
             current.setDate(current.getDate() + 1);
         }
