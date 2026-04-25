@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>キッチンカー出店カレンダー（管理者用）</title>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/japanese-holidays@1.0.10/lib/japanese-holidays.min.js"></script>
+<style>
+  body { font-family: sans-serif; background-color: #f4f4f4; padding: 0; margin: 0; }
+  #top-bar { background: #fff; padding: 10px 20px; border-bottom: 1px solid #ddd; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  #top-bar > * { margin: 5px 0; }
+  .control-group { display: flex; align-items: center; gap: 5px; padding: 0 10px; border-left: 1px solid #ccc; }
+  #calendar-container { padding: 20px; background: #fff; margin: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+  .fc .fc-daygrid-day-frame { min-height: 120px; }
+  .sunday-holiday { background-color: #ffe8e8; }
+  .saturday { background-color: #eaf4ff; }
+  .fc-event { cursor: pointer; border: none !important; padding: 4px 6px !important; border-radius: 4px !important; font-size: 0.8em !important; }
+  .fc-day-today { background-color: #fff8e1 !important; }
+  .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+  .popup-content { background: #fff; padding: 25px; border-radius: 8px; width: 90%; max-width: 800px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+  .popup-body { overflow-y: auto; flex-grow: 1; margin-bottom: 15px; max-height: 65vh; }
+  .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+  .popup-header h2 { margin: 0; }
+  .popup-footer { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  input[type="text"], input[type="date"], select, button, input[type="file"], textarea { padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; font-family: sans-serif;}
+  button { cursor: pointer; background-color: #007bff; color: white; border: 1px solid #007bff; }
+  button:hover { background-color: #0056b3; }
+  .button { display: inline-block; padding: 8px; border-radius: 4px; border: 1px solid #007bff; font-size: 14px; background-color: #007bff; color:white; cursor:pointer; }
+  .button:hover { background-color: #0056b3; }
+  .danger-button { background-color: #dc3545; border-color: #dc3545; }
+  .danger-button:hover { background-color: #c82333; }
+  .secondary-button { background-color: #6c757d; border-color: #6c757d; }
+  .secondary-button:hover { background-color: #5a6268; }
+  #event-list-table { width: 100%; border-collapse: collapse; }
+  #event-list-table th, #event-list-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  #event-list-table th { background-color: #f2f2f2; }
+
+  .fc .fc-daygrid-day-top {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end; 
+      align-items: baseline;
+      padding: 2px 4px;
+      width: 100%;
+      box-sizing: border-box;
+  }
+  .fc .fc-daygrid-day-number {
+      float: none !important;
+      padding: 0 !important;
+  }
+  .fc .day-cell-time {
+      font-size: 0.7em;
+      font-weight: bold;
+      color: #e67e22;
+      line-height: 1;
+      margin-right: auto;
+  }
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+    <label for="file-input" class="button">Excelファイルを選択</label>
+    <input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;">
+    <button id="load-excel-button">Excelから登録</button>
+    <div class="control-group">
+        <input type="date" id="update-date">
+        <select id="update-start-hour"></select>時 <select id="update-start-min"></select>分～
+        <select id="update-end-hour"></select>時 <select id="update-end-min"></select>分
+        <button id="preset-day">デイ</button>
+        <button id="preset-nighter">ナイター</button>
+        <button id="update-times-button">時刻を一括更新</button>
+    </div>
+    <div class="control-group">
+        <button id="show-add-popup-button" class="secondary-button">個別登録</button>
+        <button id="show-list-button" class="secondary-button">登録済み店舗一覧</button>
+    </div>
+    <div class="control-group">
+        <button id="generate-file-button" style="background-color:#28a745;border-color:#28a745;">閲覧用ファイル生成</button>
+    </div>
+</div>
+
+<div id="calendar-container"><div id="calendar"></div></div>
+
+<div id="event-list-popup" class="popup-overlay">
+  <div class="popup-content">
+    <div class="popup-header"><h2>登録済み店舗一覧</h2><input type="text" id="popup-search-box" placeholder="一覧内を店舗名で検索..." style="padding:8px;border-radius:4px;border:1px solid #ccc;font-size:14px;width:50%;"></div>
+    <div class="popup-body">
+        <table id="event-list-table"><thead><tr><th>店舗名</th><th>日付</th><th>営業時間</th><th>削除</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="popup-footer"><button id="clear-all-button" class="danger-button">全データ削除</button><button id="close-popup-button" class="secondary-button">閉じる</button></div>
+  </div>
+</div>
+
+<div id="manual-add-popup" class="popup-overlay">
+  <div class="popup-content">
+    <div class="popup-header"><h2>イベントを個別登録</h2></div>
+    <div class="popup-body">
+      <p><label for="add-title">店舗名:</label><br><input type="text" id="add-title" style="width: 95%;"></p>
+      <p><label for="add-date">出店日:</label><br><input type="date" id="add-date"></p>
+      <p><label>時間:</label><br><select id="add-start-hour"></select>時 <select id="add-start-min"></select>分～<select id="add-end-hour"></select>時 <select id="add-end-min"></select>分 <button id="add-preset-day" class="secondary-button">デイ</button> <button id="add-preset-nighter" class="secondary-button">ナイター</button></p>
+      <p><label for="add-description">店舗説明 (提供商品など):</label><br><textarea id="add-description" rows="3" style="width: 95%;"></textarea></p>
+      <p><label for="add-instagram-url">Instagram URL:</label><br><input type="text" id="add-instagram-url" placeholder="例: https://www.instagram.com/xxxx" style="width: 95%;"></p>
+    </div>
+    <div class="popup-footer" style="justify-content: flex-end; gap: 10px;"><button id="cancel-add-button" class="secondary-button">キャンセル</button><button id="add-event-button">登録</button></div>
+  </div>
+</div>
+
+<div id="edit-event-popup" class="popup-overlay">
+  <div class="popup-content">
+    <input type="hidden" id="edit-event-id">
+    <div class="popup-header"><h2>イベントを編集</h2></div>
+    <div class="popup-body">
+      <p><label for="edit-title">店舗名:</label><br><input type="text" id="edit-title" style="width: 95%;"></p>
+      <p><label for="edit-date">出店日:</label><br><input type="date" id="edit-date"></p>
+      <p><label>時間:</label><br><select id="edit-start-hour"></select>時 <select id="edit-start-min"></select>分～<select id="edit-end-hour"></select>時 <select id="edit-end-min"></select>分 <button id="edit-preset-day" class="secondary-button">デイ</button> <button id="edit-preset-nighter" class="secondary-button">ナイター</button></p>
+      <p><label for="edit-description">店舗説明 (提供商品など):</label><br><textarea id="edit-description" rows="3" style="width: 95%;"></textarea></p>
+      <p><label for="edit-instagram-url">Instagram URL:</label><br><input type="text" id="edit-instagram-url" style="width: 95%;"></p>
+    </div>
+    <div class="popup-footer">
+       <button id="delete-event-button" class="danger-button">このイベントを削除</button>
+       <div style="display:flex; gap:10px;"><button id="cancel-edit-button" class="secondary-button">キャンセル</button><button id="save-edit-button">変更を保存</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    let events = loadEvents();
+
+    function saveEvents() {
+        localStorage.setItem('kitchenCarEvents', JSON.stringify(events));
+    }
+    function loadEvents() {
+        const storedEvents = localStorage.getItem('kitchenCarEvents');
+        try {
+            return JSON.parse(storedEvents || '[]');
+        } catch (e) {
+            console.error("ローカルストレージのデータの解析に失敗しました。", e);
+            return [];
+        }
+    }
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        locale: 'ja',
+        headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+        initialView: 'dayGridMonth',
+        firstDay: 1,
+        events: (fetchInfo, successCallback) => { successCallback(events); },
+        editable: true,
+        dateClick: info => openAddPopup(info.dateStr),
+        eventClick: info => openEditPopup(info.event),
+        eventDrop: info => updateEventTime(info.event),
+        eventResize: info => updateEventTime(info.event),
+        dayMaxEvents: true,
+        datesSet: info => {
+            applyDateStyles(info);
+        },
+
+        displayEventTime: false, 
+        
+        dayCellDidMount: function(arg) {
+            const existingTimeEl = arg.el.querySelector('.day-cell-time');
+            if (existingTimeEl) {
+                existingTimeEl.remove();
+            }
+
+            const y = arg.date.getFullYear();
+            const m = ('0' + (arg.date.getMonth() + 1)).slice(-2);
+            const d = ('0' + arg.date.getDate()).slice(-2);
+            const dateStr = `${y}-${m}-${d}`;
+
+            const dayEvents = events.filter(ev => ev.start && ev.start.startsWith(dateStr));
+            
+            if (dayEvents.length > 0) {
+                const firstEvent = dayEvents[0];
+                const start = new Date(firstEvent.start);
+                const end = new Date(firstEvent.end);
+                const timeStr = `${('0'+start.getHours()).slice(-2)}:${('0'+start.getMinutes()).slice(-2)}-${('0'+end.getHours()).slice(-2)}:${('0'+end.getMinutes()).slice(-2)}`;
+                
+                const timeEl = document.createElement('div');
+                timeEl.className = 'day-cell-time';
+                timeEl.innerText = timeStr;
+
+                const dayNumberEl = arg.el.querySelector('.fc-daygrid-day-number');
+                if (dayNumberEl) {
+                    dayNumberEl.before(timeEl);
+                }
+            }
+        }
+    });
+    calendar.render();
+
+    function updateEventTime(event) {
+        const index = events.findIndex(e => e.id === event.id);
+        if (index > -1) {
+            events[index].start = event.startStr;
+            events[index].end = event.endStr;
+            saveEvents();
+            updateEventList();
+        }
+    }
+
+    function removeEvent(eventId) {
+        const index = events.findIndex(e => e.id === eventId);
+        if (index > -1) {
+            events.splice(index, 1);
+            saveEvents();
+            calendar.refetchEvents();
+            updateEventList();
+        }
+    }
+
+    function initTimeSelects(prefix, defaultStart, defaultEnd) {
+        const hourS = document.getElementById(`${prefix}-start-hour`), minS = document.getElementById(`${prefix}-start-min`);
+        const hourE = document.getElementById(`${prefix}-end-hour`), minE = document.getElementById(`${prefix}-end-min`);
+        if(hourS.options.length === 0){
+            const hours = Array.from({length: 24}, (_, i) => ('0' + i).slice(-2));
+            const mins = Array.from({length: 6}, (_, i) => ('0' + i * 10).slice(-2));
+            [hourS, hourE].forEach(s => hours.forEach(h => s.add(new Option(h, h))));
+            [minS, minE].forEach(s => mins.forEach(m => s.add(new Option(m, m))));
+        }
+        hourS.value = defaultStart.hour; minS.value = defaultStart.min;
+        hourE.value = defaultEnd.hour; minE.value = defaultEnd.min;
+    }
+
+    ['update', 'add', 'edit'].forEach(prefix => initTimeSelects(prefix, {hour:'11', min:'00'}, {hour:'16', min:'30'}));
+    
+    function applyDateStyles(dateInfo) {
+        document.querySelectorAll('.saturday, .sunday-holiday').forEach(c => c.classList.remove('saturday', 'sunday-holiday'));
+        let current = new Date(dateInfo.start);
+        while (current < dateInfo.end) {
+            const dateStr = `${current.getFullYear()}-${('0'+(current.getMonth()+1)).slice(-2)}-${('0'+current.getDate()).slice(-2)}`;
+            const dayCell = document.querySelector(`.fc-day[data-date="${dateStr}"]`);
+            if (dayCell) {
+                const dayOfWeek = current.getDay();
+                const isHoliday = JapaneseHolidays.isHoliday(current);
+                if (isHoliday || dayOfWeek === 0) dayCell.classList.add('sunday-holiday');
+                else if (dayOfWeek === 6) dayCell.classList.add('saturday');
+            }
+            current.setDate(current.getDate() + 1);
+        }
+    }
+
+    document.querySelector('label[for="file-input"]').addEventListener('click', () => document.getElementById('file-input').value = '');
+    document.getElementById('load-excel-button').addEventListener('click', () => {
+        const fileInput = document.getElementById('file-input');
+        if (fileInput.files.length > 0) { handleFile(fileInput.files[0]); } else { alert('Excelファイルを選択してください。'); }
+    });
+    
+    function handleFile(file) {
+        if (!confirm('Excelファイルのデータでカレンダーを上書きしますか？既存のデータはクリアされます。')) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array', cellDates: true});
+                const sheetName = '出店管理2026年度';
+                const worksheet = workbook.Sheets[sheetName];
+                if (!worksheet) { 
+                    alert(`「${sheetName}」という名前のシートが見つかりません。`); 
+                    return; 
+                }
+                
+                const dates = {};
+                const hours = {};
+                let col = 'N';
+                while (true) {
+                    const dateCellAddress = col + '4';
+                    const dateCell = worksheet[dateCellAddress];
+                    if (!dateCell || !dateCell.v) break;
+                    
+                    const dateObj = dateCell.v;
+                    if (dateObj instanceof Date && !isNaN(dateObj)) {
+                         dates[col] = `${dateObj.getFullYear()}-${('0' + (dateObj.getMonth() + 1)).slice(-2)}-${('0' + dateObj.getDate()).slice(-2)}`;
+                    } else {
+                        console.warn(`列 ${col} の日付セル (${dateCell.v}) を読み込めませんでした。`);
+                    }
+
+                    const hourCellAddress = col + '2';
+                    const hourCell = worksheet[hourCellAddress];
+                    hours[col] = (hourCell && hourCell.w) ? hourCell.w.toString().trim() : 'ﾃﾞｲ通常'; 
+
+                    const nextCharCode = col.charCodeAt(0) + 1;
+                    if (nextCharCode > 'Z'.charCodeAt(0)) {
+                        break; 
+                    }
+                    col = String.fromCharCode(nextCharCode);
+                }
+
+                if (Object.keys(dates).length === 0) {
+                    alert("Excelの4行目（N列以降）から有効な日付データを読み取れませんでした。\nセルの書式が「日付」形式か確認してください。");
+                    return;
+                }
+
+                const newEvents = [];
+                let rowNum = 5;
+                while (worksheet['C' + rowNum]) {
+                    const storeName = worksheet['C' + rowNum].v;
+
+                    // ★ [変更] 主な商品（E列）とInstagram（H列）を別々に読み込む
+                    const mainProductsCell = worksheet['E' + rowNum];
+                    const instagramUrlCell = worksheet['H' + rowNum];
+                    const description = (mainProductsCell && mainProductsCell.v) ? mainProductsCell.v.toString().trim() : '';
+                    const instagramUrl = (instagramUrlCell && instagramUrlCell.v) ? instagramUrlCell.v.toString().trim() : '';
+                    
+                    if (storeName) {
+                        for (const c in dates) {
+                            if (worksheet[c + rowNum]?.v === 'OK') {
+                                
+                                let startTime = '11:00';
+                                let endTime = '16:30';
+                                const hourType = hours[c];
+
+                                if (hourType === 'ﾃﾞｲ通常') {
+                                    startTime = '11:00';
+                                    endTime = '16:30';
+                                } else if (hourType === 'ﾅｲﾀｰ通常') {
+                                    startTime = '11:00';
+                                    endTime = '19:30';
+                                } else if (hourType && hourType.includes('-')) {
+                                    const parts = hourType.split('-');
+                                    if(parts.length === 2) {
+                                       startTime = parts[0].trim();
+                                       endTime = parts[1].trim();
+                                    }
+                                }
+
+                                newEvents.push({
+                                    id: `${Date.now()}-${Math.random()}`,
+                                    title: storeName,
+                                    start: `${dates[c]}T${startTime}:00`,
+                                    end: `${dates[c]}T${endTime}:00`,
+                                    allDay: false,
+                                    // ★ [変更] descriptionとinstagramUrlを別々のプロパティとして保存
+                                    extendedProps: { 
+                                        description: description,
+                                        instagramUrl: instagramUrl 
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    rowNum++;
+                }
+                
+                events.length = 0;
+                Array.prototype.push.apply(events, newEvents);
+                saveEvents();
+                calendar.refetchEvents();
+                updateEventList();
+                alert('Excelからのデータ登録が完了しました。');
+            } catch (error) {
+                console.error("Excelファイルの処理中にエラーが発生しました:", error);
+                alert("Excelファイルの読み込みに失敗しました。ファイル形式や内容、ブラウザのコンソールを確認してください。");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+    
+    function setPresetTime(prefix, sh, sm, eh, em){
+        document.getElementById(`${prefix}-start-hour`).value = sh; document.getElementById(`${prefix}-start-min`).value = sm;
+        document.getElementById(`${prefix}-end-hour`).value = eh; document.getElementById(`${prefix}-end-min`).value = em;
+    }
+    document.getElementById('preset-day').addEventListener('click', () => setPresetTime('update', '11', '00', '16', '30'));
+    document.getElementById('preset-nighter').addEventListener('click', () => setPresetTime('update', '11', '00', '19', '30'));
+    document.getElementById('add-preset-day').addEventListener('click', () => setPresetTime('add', '11', '00', '16', '30'));
+    document.getElementById('add-preset-nighter').addEventListener('click', () => setPresetTime('add', '11', '00', '19', '30'));
+    document.getElementById('edit-preset-day').addEventListener('click', () => setPresetTime('edit', '11', '00', '16', '30'));
+    document.getElementById('edit-preset-nighter').addEventListener('click', () => setPresetTime('edit', '11', '00', '19', '30'));
+
+    document.getElementById('update-times-button').addEventListener('click', () => {
+        const date = document.getElementById('update-date').value;
+        const start = `${document.getElementById('update-start-hour').value}:${document.getElementById('update-start-min').value}`;
+        const end = `${document.getElementById('update-end-hour').value}:${document.getElementById('update-end-min').value}`;
+        if (!date || (start >= end)) { alert('日付と時刻を正しく入力してください。'); return; }
+        
+        let count = 0;
+        events.forEach(ev => {
+            if (ev.start.startsWith(date)) {
+                ev.start = `${date}T${start}:00`;
+                ev.end = `${date}T${end}:00`;
+                count++;
+            }
+        });
+        
+        if (count > 0) {
+            saveEvents();
+            calendar.refetchEvents();
+            updateEventList();
+            alert(`${date}の${count}件のイベントを更新しました。`);
+        } else {
+            alert(`${date}に出店予定の店舗はありませんでした。`);
+        }
+    });
+
+    const listPopup = document.getElementById('event-list-popup');
+    const addPopup = document.getElementById('manual-add-popup');
+    const editPopup = document.getElementById('edit-event-popup');
+
+    function openAddPopup(dateStr = '') {
+        document.getElementById('add-title').value = '';
+        document.getElementById('add-description').value = '';
+        document.getElementById('add-instagram-url').value = ''; // ★ [追加] Instagram欄をクリア
+        document.getElementById('add-date').value = dateStr;
+        initTimeSelects('add', {hour:'11', min:'00'}, {hour:'16', min:'30'});
+        addPopup.style.display = 'flex';
+    }
+
+    function openEditPopup(event) {
+        document.getElementById('edit-event-id').value = event.id;
+        document.getElementById('edit-title').value = event.title;
+        document.getElementById('edit-description').value = event.extendedProps.description || '';
+        document.getElementById('edit-instagram-url').value = event.extendedProps.instagramUrl || ''; // ★ [追加] Instagram欄をセット
+        const start = new Date(event.startStr);
+        document.getElementById('edit-date').value = start.toISOString().split('T')[0];
+        const end = new Date(event.endStr);
+        setPresetTime('edit', ('0'+start.getHours()).slice(-2), ('0'+start.getMinutes()).slice(-2), ('0'+end.getHours()).slice(-2), ('0'+end.getMinutes()).slice(-2));
+        editPopup.style.display = 'flex';
+    }
+
+    document.getElementById('show-list-button').addEventListener('click', () => { updateEventList(); listPopup.style.display = 'flex'; });
+    document.getElementById('close-popup-button').addEventListener('click', () => listPopup.style.display = 'none');
+    document.getElementById('show-add-popup-button').addEventListener('click', () => openAddPopup());
+    document.getElementById('cancel-add-button').addEventListener('click', () => addPopup.style.display = 'none');
+    document.getElementById('cancel-edit-button').addEventListener('click', () => editPopup.style.display = 'none');
+
+    [listPopup, addPopup, editPopup].forEach(p => p.addEventListener('click', e => { if (e.target === p) p.style.display = 'none'; }));
+
+    document.getElementById('clear-all-button').addEventListener('click', () => {
+        if (confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) {
+            events.length = 0;
+            saveEvents();
+            calendar.refetchEvents();
+            updateEventList();
+            alert('すべてのデータを削除しました。');
+            listPopup.style.display = 'none';
+        }
+    });
+
+    function updateEventList() {
+        const tbody = document.querySelector('#event-list-table tbody');
+        tbody.innerHTML = '';
+        [...events].sort((a,b) => new Date(a.start) - new Date(b.start)).forEach(ev => {
+            const start = new Date(ev.start);
+            const end = ev.end ? new Date(ev.end) : start;
+            const time = `${('0'+start.getHours()).slice(-2)}:${('0'+start.getMinutes()).slice(-2)} - ${('0'+end.getHours()).slice(-2)}:${('0'+end.getMinutes()).slice(-2)}`;
+            const row = tbody.insertRow();
+            row.innerHTML = `<td>${ev.title}</td><td>${start.getFullYear()}/${start.getMonth()+1}/${start.getDate()}</td><td>${time}</td><td><button class="danger-button list-delete-btn" data-id="${ev.id}">削除</button></td>`;
+        });
+        document.querySelectorAll('.list-delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('このイベントを削除しますか？')) {
+                    removeEvent(this.getAttribute('data-id'));
+                }
+            });
+        });
+    }
+
+    document.getElementById('add-event-button').addEventListener('click', () => {
+        const title = document.getElementById('add-title').value.trim();
+        const date = document.getElementById('add-date').value;
+        const description = document.getElementById('add-description').value.trim();
+        const instagramUrl = document.getElementById('add-instagram-url').value.trim(); // ★ [追加] Instagramの値を取得
+        const start = `${document.getElementById('add-start-hour').value}:${document.getElementById('add-start-min').value}`;
+        const end = `${document.getElementById('add-end-hour').value}:${document.getElementById('add-end-min').value}`;
+        if (!title || !date || (start >= end)) { alert('店舗名、日付、時刻を正しく入力してください。'); return; }
+        
+        const newEvent = {
+            id: `${Date.now()}-${Math.random()}`,
+            title,
+            start: `${date}T${start}:00`,
+            end: `${date}T${end}:00`,
+            allDay: false,
+            extendedProps: { description, instagramUrl } // ★ [変更] instagramUrlも保存
+        };
+        events.push(newEvent);
+        saveEvents();
+        calendar.addEvent(newEvent);
+        updateEventList();
+        addPopup.style.display = 'none';
+        alert('イベントを登録しました。');
+    });
+
+    document.getElementById('save-edit-button').addEventListener('click', () => {
+        const eventId = document.getElementById('edit-event-id').value;
+        const index = events.findIndex(e => e.id === eventId);
+        if (index > -1) {
+            const title = document.getElementById('edit-title').value.trim();
+            const date = document.getElementById('edit-date').value;
+            const description = document.getElementById('edit-description').value.trim();
+            const instagramUrl = document.getElementById('edit-instagram-url').value.trim(); // ★ [追加] Instagramの値を取得
+            const start = `${document.getElementById('edit-start-hour').value}:${document.getElementById('edit-start-min').value}`;
+            const end = `${document.getElementById('edit-end-hour').value}:${document.getElementById('edit-end-min').value}`;
+            if (!title || !date || (start >= end)) { alert('店舗名、日付、時刻を正しく入力してください。'); return; }
+
+            events[index] = { ...events[index], title, start: `${date}T${start}:00`, end: `${date}T${end}:00`, extendedProps: { description, instagramUrl } }; // ★ [変更] instagramUrlも保存
+            saveEvents();
+            calendar.refetchEvents();
+            updateEventList();
+            editPopup.style.display = 'none';
+            alert('変更を保存しました。');
+        }
+    });
+
+    document.getElementById('delete-event-button').addEventListener('click', () => {
+        const eventId = document.getElementById('edit-event-id').value;
+        if (confirm('このイベントを本当に削除しますか？')) {
+            removeEvent(eventId);
+            editPopup.style.display = 'none';
+            alert('イベントを削除しました。');
+        }
+    });
+
+    document.getElementById('popup-search-box').addEventListener('input', e => {
+        const searchTerm = e.target.value.toLowerCase();
+        document.querySelectorAll('#event-list-table tbody tr').forEach(row => {
+            row.style.display = row.cells[0].textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    document.getElementById('generate-file-button').addEventListener('click', () => {
+        const eventsJSON = localStorage.getItem('kitchenCarEvents') || '[]';
+        
+        const pageTitle = 'キッチンカー出店カレンダー';
+
+        // ★ [変更] 閲覧用HTMLのテンプレートを修正
+        const readonlyHTML = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${pageTitle}<\/title> 
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/japanese-holidays@1.0.10/lib/japanese-holidays.min.js"><\/script>
+<style>
+  body {font-family:sans-serif;background-color:#f4f4f4;padding:0;margin:0;}
+  #top-bar{background:#fff;padding:10px 20px;border-bottom:1px solid #ddd;display:flex;align-items:center;justify-content:center;position:relative;}
+  #top-bar h2{margin:0; font-size:1.2em; color:#333;}
+  #top-bar button{position:absolute; right:20px; padding:8px 12px;border-radius:4px;border:1px solid #ccc;font-size:14px;background-color:#6c757d;color:white;cursor:pointer;}
+  #top-bar button:hover{background-color:#5a6268;}
+  #calendar-container{padding:20px;background:#fff;margin:20px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+  .fc .fc-daygrid-day-frame{min-height:120px;}
+  .sunday-holiday{background-color:#ffe8e8;}
+  .saturday{background-color:#eaf4ff;}
+  .fc-event{cursor:pointer;border:none!important;padding:4px 6px!important;border-radius:4px!important;font-size:0.8em!important;}
+  .fc-day-today{background-color:#fff8e1!important;}
+  .popup-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:center;z-index:1000;}
+  .popup-content{background:#fff;padding:25px;border-radius:8px;width:90%;max-width:800px;box-shadow:0 5px 15px rgba(0,0,0,0.3);display:flex;flex-direction:column;}
+  .popup-body{overflow-y:auto;flex-grow:1;margin-bottom:15px;max-height:65vh;}
+  .popup-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;}
+  .popup-header h2{margin:0;}
+  .popup-footer{display:flex;justify-content:flex-end;align-items:center;}
+  #event-list-table{width:100%;border-collapse:collapse;}
+  #event-list-table th,#event-list-table td{border:1px solid #ddd;padding:8px;text-align:left;}
+  #event-list-table th{background-color:#f2f2f2;}
+  #detail-popup-body p{margin:10px 0;}
+  #detail-popup-body strong{display:block;margin-bottom:4px;color:#333;}
+  #detail-popup-body .description{white-space:pre-wrap;background-color:#f9f9f9;padding:10px;border-radius:4px; word-break:break-word;}
+  #day-hover-popup{position:absolute;display:none;background-color:rgba(0,0,0,0.85);color:white;padding:10px 15px;border-radius:6px;z-index:1001;max-width:300px;box-shadow:0 4px 8px rgba(0,0,0,0.2);pointer-events:none;font-size:0.9em;line-height:1.6;}
+  #day-hover-popup h3{margin:0 0 8px 0;font-size:1em;padding-bottom:5px;border-bottom:1px solid #555;}
+  #day-hover-popup div{margin-bottom:4px;}
+  #day-hover-popup div:last-child{margin-bottom:0;}
+  .fc .fc-daygrid-day-top { display: flex; flex-direction: row; justify-content: flex-end; align-items: baseline; padding: 2px 4px; width: 100%; box-sizing: border-box; }
+  .fc .fc-daygrid-day-number { float: none !important; padding: 0 !important; }
+  .fc .day-cell-time { font-size: 0.7em; font-weight: bold; color: #e67e22; line-height: 1; margin-right: auto; }
+<\/style>
+<\/head>
+<body>
+<div id="top-bar"><h2>${pageTitle}<\/h2><button id="show-list-button">予定店舗一覧<\/button><\/div>
+<div id="calendar-container"><div id="calendar"><\/div><\/div>
+<div id="day-hover-popup"><\/div>
+<div id="event-list-popup" class="popup-overlay">
+  <div class="popup-content">
+    <div class="popup-header">
+        <h2>予定店舗一覧<\/h2>
+        <input type="text" id="popup-search-box" placeholder="一覧内を店舗名で検索..." style="padding:8px;border-radius:4px;border:1px solid #ccc;font-size:14px;width:50%;">
+    <\/div>
+    <div class="popup-body">
+        <table id="event-list-table"><thead><tr><th>店舗名<\/th><th>日付<\/th><th>営業時間<\/th><\/tr><\/thead><tbody><\/tbody><\/table>
+    <\/div>
+    <div class="popup-footer"><button id="close-list-popup-button">閉じる<\/button><\/div>
+  <\/div>
+<\/div>
+<div id="detail-popup" class="popup-overlay">
+  <div class="popup-content">
+    <div class="popup-header"><h2>出店詳細<\/h2><\/div>
+    <div id="detail-popup-body" class="popup-body">
+      <p><strong>店舗名:<\/strong> <span id="detail-title"><\/span><\/p>
+      <p><strong>出店日:<\/strong> <span id="detail-date"><\/span><\/p>
+      <p><strong>営業時間:<\/strong> <span id="detail-time"><\/span><\/p>
+      <p><strong>店舗説明 (提供商品など):<\/strong><\/p>
+      <div id="detail-description" class="description"><\/div>
+      <div id="instagram-container" style="display:none; margin-top: 15px;">
+        <p><strong>Instagram:<\/strong><\/p>
+        <a id="detail-instagram-link" href="#" target="_blank" rel="noopener noreferrer" style="word-break:break-all;"><\/a>
+      <\/div>
+    <\/div>
+    <div class="popup-footer"><button id="close-detail-popup-button">閉じる<\/button><\/div>
+  <\/div>
+<\/div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const hoverPopup = document.getElementById('day-hover-popup');
+    const events = ${eventsJSON};
+    
+    function addDayHoverListeners() {
+        document.querySelectorAll('.fc-daygrid-day').forEach(cell => {
+            cell.removeEventListener('mouseenter', handleDayMouseEnter);
+            cell.removeEventListener('mouseleave', handleDayMouseLeave);
+            cell.addEventListener('mouseenter', handleDayMouseEnter);
+            cell.addEventListener('mouseleave', handleDayMouseLeave);
+        });
+    }
+
+    function handleDayMouseEnter(e) {
+        const dateStr = this.getAttribute('data-date');
+        if (!dateStr) return;
+        const dayEvents = events.filter(ev => ev.start && ev.start.startsWith(dateStr))
+                                .sort((a, b) => new Date(a.start) - new Date(b.start));
+        if (dayEvents.length === 0) return;
+
+        const dateObj = new Date(dateStr + 'T12:00:00');
+        let html = \`<h3>\${dateObj.getMonth() + 1}/\${dateObj.getDate()}の出店</h3>\`;
+        dayEvents.forEach(ev => {
+            html += \`<div><strong>\${ev.title}</strong></div>\`;
+        });
+        
+        hoverPopup.innerHTML = html;
+        hoverPopup.style.display = 'block';
+        hoverPopup.style.left = \`\${e.pageX + 15}px\`;
+        hoverPopup.style.top = \`\${e.pageY + 15}px\`;
+    }
+
+    function handleDayMouseLeave() {
+        hoverPopup.style.display = 'none';
+    }
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        locale: 'ja',
+        headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+        initialView: 'dayGridMonth',
+        firstDay: 1,
+        events: events,
+        editable: false,
+        eventClick: info => openDetailPopup(info.event),
+        dayMaxEvents: true,
+        displayEventTime: false,
+        dayCellDidMount: function(arg) {
+            const existingTimeEl = arg.el.querySelector('.day-cell-time');
+            if (existingTimeEl) {
+                existingTimeEl.remove();
+            }
+            const y = arg.date.getFullYear();
+            const m = ('0' + (arg.date.getMonth() + 1)).slice(-2);
+            const d = ('0' + arg.date.getDate()).slice(-2);
+            const dateStr = \`\${y}-\${m}-\${d}\`;
+            const dayEvents = events.filter(ev => ev.start && ev.start.startsWith(dateStr));
+            
+            if (dayEvents.length > 0) {
+                const firstEvent = dayEvents[0];
+                const start = new Date(firstEvent.start);
+                const end = new Date(firstEvent.end);
+                const timeStr = \`\${('0'+start.getHours()).slice(-2)}:\${('0'+start.getMinutes()).slice(-2)}-\${('0'+end.getHours()).slice(-2)}:\${('0'+end.getMinutes()).slice(-2)}\`;
+                
+                const timeEl = document.createElement('div');
+                timeEl.className = 'day-cell-time';
+                timeEl.innerText = timeStr;
+
+                const dayNumberEl = arg.el.querySelector('.fc-daygrid-day-number');
+                if (dayNumberEl) {
+                    dayNumberEl.before(timeEl);
+                }
+            }
+        },
+        datesSet: info => {
+            applyDateStyles(info);
+            addDayHoverListeners();
+        },
+        viewDidMount: () => {
+             addDayHoverListeners();
+        }
+    });
+    calendar.render();
+
+    function applyDateStyles(dateInfo) {
+        document.querySelectorAll('.saturday, .sunday-holiday').forEach(c => c.classList.remove('saturday', 'sunday-holiday'));
+        let current = new Date(dateInfo.start);
+        while (current < dateInfo.end) {
+            const dateStr = \`\${current.getFullYear()}-\${('0' + (current.getMonth() + 1)).slice(-2)}-\${('0' + current.getDate()).slice(-2)}\`;
+            const dayCell = document.querySelector(\`.fc-day[data-date="\${dateStr}"]\`);
+            if (dayCell) {
+                const dayOfWeek = current.getDay();
+                const isHoliday = JapaneseHolidays.isHoliday(current);
+                if (isHoliday || dayOfWeek === 0) dayCell.classList.add('sunday-holiday');
+                else if (dayOfWeek === 6) dayCell.classList.add('saturday');
+            }
+            current.setDate(current.getDate() + 1);
+        }
+    }
+
+    const listPopup = document.getElementById('event-list-popup');
+    const detailPopup = document.getElementById('detail-popup');
+
+    function openDetailPopup(event) {
+        document.getElementById('detail-title').textContent = event.title;
+        const start = new Date(event.start);
+        const end = event.end ? new Date(event.end) : start;
+        document.getElementById('detail-date').textContent = \`\${start.getFullYear()}年\${start.getMonth() + 1}月\${start.getDate()}日\`;
+        document.getElementById('detail-time').textContent = \`\${('0'+start.getHours()).slice(-2)}:\${('0'+start.getMinutes()).slice(-2)} - \${('0'+end.getHours()).slice(-2)}:\${('0'+end.getMinutes()).slice(-2)}\`;
+        
+        const desc = event.extendedProps.description || '説明はありません';
+        document.getElementById('detail-description').textContent = desc;
+        
+        // ★ [追加] Instagramリンクの処理
+        const instagramContainer = document.getElementById('instagram-container');
+        const instagramLink = document.getElementById('detail-instagram-link');
+        const instagramUrl = event.extendedProps.instagramUrl;
+        if (instagramUrl) {
+            instagramLink.href = instagramUrl;
+            instagramLink.textContent = instagramUrl;
+            instagramContainer.style.display = 'block';
+        } else {
+            instagramContainer.style.display = 'none';
+        }
+
+        detailPopup.style.display = 'flex';
+    }
+
+    function updateEventList() {
+        const tbody = document.querySelector('#event-list-table tbody');
+        tbody.innerHTML = '';
+        [...events].sort((a,b) => new Date(a.start) - new Date(b.start)).forEach(ev => {
+            const start = new Date(ev.start);
+            const end = ev.end ? new Date(ev.end) : start;
+            const time = \`\${('0'+start.getHours()).slice(-2)}:\${('0'+start.getMinutes()).slice(-2)} - \${('0'+end.getHours()).slice(-2)}:\${('0'+end.getMinutes()).slice(-2)}\`;
+            const row = tbody.insertRow();
+            row.insertCell().textContent = ev.title;
+            row.insertCell().textContent = \`\${start.getFullYear()}/\${start.getMonth() + 1}/\${start.getDate()}\`;
+            row.insertCell().textContent = time;
+        });
+    }
+
+    document.getElementById('show-list-button').addEventListener('click', () => { updateEventList(); listPopup.style.display = 'flex'; });
+    document.getElementById('close-list-popup-button').addEventListener('click', () => listPopup.style.display = 'none');
+    document.getElementById('close-detail-popup-button').addEventListener('click', () => detailPopup.style.display = 'none');
+    [listPopup, detailPopup].forEach(p => p.addEventListener('click', e => { if (e.target === p) p.style.display = 'none'; }));
+    document.getElementById('popup-search-box').addEventListener('input', e => {
+        const searchTerm = e.target.value.toLowerCase();
+        document.querySelectorAll('#event-list-table tbody tr').forEach(row => {
+            row.style.display = row.cells[0].textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
+        });
+    });
+    updateEventList();
+});
+<\/script>
+<\/body>
+<\/html>
+`;
+        const blob = new Blob([readonlyHTML.trim()], {type:'text/html;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = '閲覧用カレンダー.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        alert('閲覧用カレンダー.html を生成しました。\nダウンロードフォルダをご確認ください。');
+    });
+
+    updateEventList();
+});
+</script>
+
+</body>
+</html>
