@@ -8,28 +8,21 @@
 <script src="https://cdn.jsdelivr.net/npm/japanese-holidays@1.0.10/lib/japanese-holidays.min.js"></script>
 <style>
   body {font-family:sans-serif;background-color:#f4f4f4;padding:0;margin:0;}
-  
   #top-bar {background:#fff; padding:10px 15px; border-bottom:1px solid #ddd; display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:10px;}
   .update-time {font-size:12px; color:#666; white-space:nowrap; flex:0 0 auto;}
   #top-bar h2 {margin:0; font-size:1.2em; color:#333; text-align:center; flex:1 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   #top-bar button {flex:0 0 auto; padding:6px 12px; border-radius:4px; border:1px solid #ccc; font-size:14px; background-color:#6c757d; color:white; cursor:pointer; white-space:nowrap;}
   #top-bar button:hover {background-color:#5a6268;}
   .btn-icon {display:none;}
-  
   #calendar-container {padding:20px; background:#fff; margin:20px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
   .fc .fc-daygrid-day-frame {min-height:120px;}
-  
   .sunday-holiday {background-color:#ffe8e8;}
   .saturday {background-color:#eaf4ff;}
   .fc-day-today {background-color:#fff8e1!important;}
-  
   .fc-list-day.sunday-holiday .fc-list-day-cushion {background-color:#ffe8e8 !important; color:#d32f2f !important;}
   .fc-list-day.saturday .fc-list-day-cushion {background-color:#eaf4ff !important; color:#0056b3 !important;}
-  
   .list-day-time {font-size: 0.85em; font-weight: bold; color: #e67e22; margin-left: 10px; background: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 4px;}
-
   .fc-event {cursor:pointer; border:none!important; padding:4px 6px!important; border-radius:4px!important; font-size:0.8em!important;}
-  
   .popup-overlay {position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index:1000;}
   .popup-content {background:#fff; padding:25px; border-radius:8px; width:90%; max-width:800px; box-shadow:0 5px 15px rgba(0,0,0,0.3); display:flex; flex-direction:column;}
   .popup-body {overflow-y:auto; flex-grow:1; margin-bottom:15px; max-height:65vh;}
@@ -42,12 +35,10 @@
   #detail-popup-body p {margin:10px 0;}
   #detail-popup-body strong {display:block; margin-bottom:4px; color:#333;}
   #detail-popup-body .description {white-space:pre-wrap; background-color:#f9f9f9; padding:10px; border-radius:4px; word-break:break-word;}
-  
   #day-hover-popup {position:absolute; display:none; background-color:rgba(0,0,0,0.85); color:white; padding:10px 15px; border-radius:6px; z-index:1001; max-width:300px; box-shadow:0 4px 8px rgba(0,0,0,0.2); pointer-events:none; font-size:0.9em; line-height:1.6;}
   #day-hover-popup h3 {margin:0 0 8px 0; font-size:1em; padding-bottom:5px; border-bottom:1px solid #555;}
   #day-hover-popup div {margin-bottom:4px;}
   #day-hover-popup div:last-child {margin-bottom:0;}
-  
   .fc .fc-daygrid-day-top {display:flex; flex-direction:row; justify-content:flex-end; align-items:baseline; padding:2px 4px; width:100%; box-sizing:border-box;}
   .fc .fc-daygrid-day-number {float:none !important; padding:0 !important;}
   .fc .day-cell-time {font-size:0.7em; font-weight:bold; color:#e67e22; line-height:1; margin-right:auto;}
@@ -59,16 +50,8 @@
       .btn-text {display:none;}
       .btn-icon {display:inline-block; font-size:1.2em; line-height:1;}
       #top-bar button {padding:6px 8px;}
-      
       #calendar-container {margin:5px; padding:10px;}
-      
-      .fc .fc-toolbar {
-          display: flex !important;
-          flex-direction: row !important;
-          justify-content: space-between !important;
-          flex-wrap: nowrap !important;
-          gap: 2px !important;
-      }
+      .fc .fc-toolbar { display: flex !important; flex-direction: row !important; justify-content: space-between !important; flex-wrap: nowrap !important; gap: 2px !important; }
       .fc .fc-toolbar-title {font-size: 1.1em !important; margin: 0 !important;}
       .fc .fc-button {padding: 0.3em 0.5em !important; font-size: 0.85em !important;}
   }
@@ -76,25 +59,17 @@
 </head>
 <body>
 <div id="top-bar">
-    <div class="update-time">更新:4/26 18:35</div>
+    <div class="update-time">更新：4/26　19：25</div>
     <h2>キッチンカー出店カレンダー</h2>
-    <button id="show-list-button" title="予定店舗一覧">
-        <span class="btn-text">予定店舗一覧</span>
-        <span class="btn-icon">📋</span>
-    </button>
+    <button id="show-list-button" title="予定店舗一覧"><span class="btn-text">予定店舗一覧</span><span class="btn-icon">📋</span></button>
 </div>
 <div id="calendar-container"><div id="calendar"></div></div>
 <div id="day-hover-popup"></div>
 
 <div id="event-list-popup" class="popup-overlay">
   <div class="popup-content">
-    <div class="popup-header">
-        <h2>予定店舗一覧</h2>
-        <input type="text" id="popup-search-box" placeholder="一覧内を店舗名で検索..." style="padding:8px;border-radius:4px;border:1px solid #ccc;font-size:14px;width:50%;">
-    </div>
-    <div class="popup-body">
-        <table id="event-list-table"><thead><tr><th>店舗名</th><th>日付</th><th>営業時間</th></tr></thead><tbody></tbody></table>
-    </div>
+    <div class="popup-header"><h2>予定店舗一覧</h2><input type="text" id="popup-search-box" placeholder="一覧内を店舗名で検索..." style="padding:8px;border-radius:4px;border:1px solid #ccc;font-size:14px;width:50%;"></div>
+    <div class="popup-body"><table id="event-list-table"><thead><tr><th>店舗名</th><th>日付</th><th>営業時間</th></tr></thead><tbody></tbody></table></div>
     <div class="popup-footer"><button id="close-list-popup-button">閉じる</button></div>
   </div>
 </div>
@@ -121,7 +96,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
     const hoverPopup = document.getElementById('day-hover-popup');
-    const events = [{"id":"1777126595855-0.29237040388495705","title":"Rock Cafe","start":"2026-05-02T11:00:00","end":"2026-05-02T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777126595855-0.10904854552662246","title":"Rock Cafe","start":"2026-05-03T11:00:00","end":"2026-05-03T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777126595855-0.9488128563781111","title":"Rock Cafe","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777126595855-0.7101926948453074","title":"Rock Cafe","start":"2026-05-23T11:00:00","end":"2026-05-23T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777126595855-0.4071990134751916","title":"たこ焼きMaRuHaChi","start":"2026-04-17T11:00:00+09:00","end":"2026-04-17T19:30:00+09:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777126595855-0.9649873734045784","title":"たこ焼きMaRuHaChi","start":"2026-05-24T11:00:00","end":"2026-05-24T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777126595855-0.35044966030429847","title":"たこ焼きMaRuHaChi","start":"2026-05-31T11:00:00","end":"2026-05-31T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777126595855-0.8595867497491294","title":"一縁（ひより）","start":"2026-05-02T11:00:00","end":"2026-05-02T19:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777126595855-0.40436778714859034","title":"一縁（ひより）","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777126595855-0.41507564587592216","title":"一縁（ひより）","start":"2026-05-30T11:00:00","end":"2026-05-30T16:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777126595855-0.04234624280980315","title":"251（ニコイチ）","start":"2026-05-03T11:00:00","end":"2026-05-03T19:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1777126595855-0.12980550651638267","title":"251（ニコイチ）","start":"2026-05-06T11:00:00+09:00","end":"2026-05-06T16:30:00+09:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1777126595855-0.47808389551969765","title":"栄好 (焼肉空志)","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}}];
+    const events = [{"id":"1777126595855-0.29237040388495705","title":"Rock Cafe","start":"2026-05-02T11:00:00","end":"2026-05-02T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777126595855-0.10904854552662246","title":"Rock Cafe","start":"2026-05-03T11:00:00","end":"2026-05-03T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777126595855-0.9488128563781111","title":"Rock Cafe","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777126595855-0.7101926948453074","title":"Rock Cafe","start":"2026-05-23T11:00:00","end":"2026-05-23T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777126595855-0.4071990134751916","title":"たこ焼きMaRuHaChi","start":"2026-04-19T11:00:00+09:00","end":"2026-04-19T19:30:00+09:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777126595855-0.9649873734045784","title":"たこ焼きMaRuHaChi","start":"2026-05-24T11:00:00","end":"2026-05-24T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777126595855-0.35044966030429847","title":"たこ焼きMaRuHaChi","start":"2026-05-31T11:00:00","end":"2026-05-31T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777126595855-0.8595867497491294","title":"一縁（ひより）","start":"2026-05-02T11:00:00","end":"2026-05-02T19:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777126595855-0.40436778714859034","title":"一縁（ひより）","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777126595855-0.41507564587592216","title":"一縁（ひより）","start":"2026-05-30T11:00:00","end":"2026-05-30T16:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777126595855-0.04234624280980315","title":"251（ニコイチ）","start":"2026-05-03T11:00:00","end":"2026-05-03T19:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1777126595855-0.12980550651638267","title":"251（ニコイチ）","start":"2026-05-06T11:00:00+09:00","end":"2026-05-06T16:30:00+09:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1777126595855-0.47808389551969765","title":"栄好 (焼肉空志)","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}}];
     
     function addDayHoverListeners() {
         document.querySelectorAll('.fc-daygrid-day').forEach(cell => {
@@ -141,65 +116,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const dateObj = new Date(dateStr + 'T12:00:00');
         let html = `<h3>${dateObj.getMonth() + 1}/${dateObj.getDate()}の出店</h3>`;
-        dayEvents.forEach(ev => {
-            html += `<div><strong>${ev.title}</strong></div>`;
-        });
+        dayEvents.forEach(ev => { html += `<div><strong>${ev.title}</strong></div>`; });
         
-        hoverPopup.innerHTML = html;
-        hoverPopup.style.display = 'block';
-        hoverPopup.style.left = `${e.pageX + 15}px`;
-        hoverPopup.style.top = `${e.pageY + 15}px`;
+        hoverPopup.innerHTML = html; hoverPopup.style.display = 'block';
+        hoverPopup.style.left = `${e.pageX + 15}px`; hoverPopup.style.top = `${e.pageY + 15}px`;
     }
-
-    function handleDayMouseLeave() {
-        hoverPopup.style.display = 'none';
-    }
-
+    function handleDayMouseLeave() { hoverPopup.style.display = 'none'; }
     function updateTodayButton() {
         const todayBtn = document.querySelector('.fc-today-button');
-        if (todayBtn) {
-            todayBtn.innerText = window.innerWidth < 768 ? '今月' : '今日';
-        }
+        if (todayBtn) { todayBtn.innerText = window.innerWidth < 768 ? '今月' : '今日'; }
     }
 
     const initialViewMode = window.innerWidth < 768 ? 'listMonth' : 'dayGridMonth';
     const initialHeight = window.innerWidth < 768 ? 'calc(100vh - 100px)' : undefined;
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
-        locale: 'ja',
-        headerToolbar: { left: 'today', center: 'title', right: 'prev,next' },
-        initialView: initialViewMode,
-        firstDay: 1,
-        events: events,
-        editable: false,
-        height: initialHeight,
-        
-        eventClick: info => openDetailPopup(info.event),
-        dayMaxEvents: true,
-        displayEventTime: false,
-        
+        locale: 'ja', headerToolbar: { left: 'today', center: 'title', right: 'prev,next' },
+        initialView: initialViewMode, firstDay: 1, events: events, editable: false, height: initialHeight,
+        eventClick: info => openDetailPopup(info.event), dayMaxEvents: true, displayEventTime: false,
         windowResize: function(arg) {
             if (window.innerWidth < 768) {
                 calendar.setOption('height', 'calc(100vh - 100px)');
-                if (calendar.view.type !== 'listMonth') {
-                    calendar.changeView('listMonth');
-                }
+                if (calendar.view.type !== 'listMonth') calendar.changeView('listMonth');
             } else {
                 calendar.setOption('height', undefined);
-                if (calendar.view.type !== 'dayGridMonth') {
-                    calendar.changeView('dayGridMonth');
-                }
+                if (calendar.view.type !== 'dayGridMonth') calendar.changeView('dayGridMonth');
             }
-            updateTodayButton();
+            updateTodayButton(); 
         },
-
         dayCellDidMount: function(arg) {
             if (calendar.view.type !== 'dayGridMonth') return; 
-            
             const existingTimeEl = arg.el.querySelector('.day-cell-time');
-            if (existingTimeEl) {
-                existingTimeEl.remove();
-            }
+            if (existingTimeEl) existingTimeEl.remove();
+            
             const y = arg.date.getFullYear();
             const m = ('0' + (arg.date.getMonth() + 1)).slice(-2);
             const d = ('0' + arg.date.getDate()).slice(-2);
@@ -208,32 +157,20 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (dayEvents.length > 0) {
                 const firstEvent = dayEvents[0];
-                const start = new Date(firstEvent.start);
-                const end = new Date(firstEvent.end);
+                const start = new Date(firstEvent.start); const end = new Date(firstEvent.end);
                 const timeStr = `${('0'+start.getHours()).slice(-2)}:${('0'+start.getMinutes()).slice(-2)}-${('0'+end.getHours()).slice(-2)}:${('0'+end.getMinutes()).slice(-2)}`;
-                
-                const timeEl = document.createElement('div');
-                timeEl.className = 'day-cell-time';
-                timeEl.innerText = timeStr;
-
+                const timeEl = document.createElement('div'); timeEl.className = 'day-cell-time'; timeEl.innerText = timeStr;
                 const dayNumberEl = arg.el.querySelector('.fc-daygrid-day-number');
-                if (dayNumberEl) {
-                    dayNumberEl.before(timeEl);
-                }
+                if (dayNumberEl) dayNumberEl.before(timeEl);
             }
         },
         datesSet: info => {
             applyDateStyles(info); 
-            
-            if (calendar.view.type === 'dayGridMonth') {
-                addDayHoverListeners();
-            }
-            updateTodayButton();
+            if (calendar.view.type === 'dayGridMonth') addDayHoverListeners();
+            updateTodayButton(); 
         },
         viewDidMount: () => {
-            if (calendar.view.type === 'dayGridMonth') {
-                addDayHoverListeners();
-            }
+            if (calendar.view.type === 'dayGridMonth') addDayHoverListeners();
             updateTodayButton();
         }
     });
@@ -247,15 +184,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let current = new Date(dateInfo.start);
         while (current < dateInfo.end) {
             const dateStr = `${current.getFullYear()}-${('0' + (current.getMonth() + 1)).slice(-2)}-${('0' + current.getDate()).slice(-2)}`;
-            const dayOfWeek = current.getDay();
-            const isHoliday = JapaneseHolidays.isHoliday(current);
-            
+            const dayOfWeek = current.getDay(); const isHoliday = JapaneseHolidays.isHoliday(current);
             const gridDayCell = document.querySelector(`.fc-daygrid-day[data-date="${dateStr}"]`);
             if (gridDayCell) {
                 if (isHoliday || dayOfWeek === 0) gridDayCell.classList.add('sunday-holiday');
                 else if (dayOfWeek === 6) gridDayCell.classList.add('saturday');
             }
-
             const listDayRow = document.querySelector(`.fc-list-day[data-date="${dateStr}"]`);
             if (listDayRow) {
                 if (isHoliday || dayOfWeek === 0) listDayRow.classList.add('sunday-holiday');
@@ -264,16 +198,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const dayEvents = events.filter(ev => ev.start && ev.start.startsWith(dateStr));
                 if (dayEvents.length > 0) {
                     const firstEvent = dayEvents[0];
-                    const start = new Date(firstEvent.start);
-                    const end = new Date(firstEvent.end);
+                    const start = new Date(firstEvent.start); const end = new Date(firstEvent.end);
                     const timeStr = `${('0'+start.getHours()).slice(-2)}:${('0'+start.getMinutes()).slice(-2)} - ${('0'+end.getHours()).slice(-2)}:${('0'+end.getMinutes()).slice(-2)}`;
-                    
                     const textContainer = listDayRow.querySelector('.fc-list-day-text');
                     if (textContainer) {
-                        const timeSpan = document.createElement('span');
-                        timeSpan.className = 'list-day-time';
-                        timeSpan.innerText = timeStr;
-                        textContainer.appendChild(timeSpan);
+                        const timeSpan = document.createElement('span'); timeSpan.className = 'list-day-time'; timeSpan.innerText = timeStr; textContainer.appendChild(timeSpan);
                     }
                 }
             }
@@ -286,25 +215,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function openDetailPopup(event) {
         document.getElementById('detail-title').textContent = event.title;
-        const start = new Date(event.start);
-        const end = event.end ? new Date(event.end) : start;
+        const start = new Date(event.start); const end = event.end ? new Date(event.end) : start;
         document.getElementById('detail-date').textContent = `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日`;
         document.getElementById('detail-time').textContent = `${('0'+start.getHours()).slice(-2)}:${('0'+start.getMinutes()).slice(-2)} - ${('0'+end.getHours()).slice(-2)}:${('0'+end.getMinutes()).slice(-2)}`;
-        
         const desc = event.extendedProps.description || '説明はありません';
         document.getElementById('detail-description').textContent = desc;
-        
         const instagramContainer = document.getElementById('instagram-container');
         const instagramLink = document.getElementById('detail-instagram-link');
         const instagramUrl = event.extendedProps.instagramUrl;
         if (instagramUrl) {
-            instagramLink.href = instagramUrl;
-            instagramLink.textContent = instagramUrl;
-            instagramContainer.style.display = 'block';
+            instagramLink.href = instagramUrl; instagramLink.textContent = instagramUrl; instagramContainer.style.display = 'block';
         } else {
             instagramContainer.style.display = 'none';
         }
-
         detailPopup.style.display = 'flex';
     }
 
@@ -312,13 +235,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const tbody = document.querySelector('#event-list-table tbody');
         tbody.innerHTML = '';
         [...events].sort((a,b) => new Date(a.start) - new Date(b.start)).forEach(ev => {
-            const start = new Date(ev.start);
-            const end = ev.end ? new Date(ev.end) : start;
+            const start = new Date(ev.start); const end = ev.end ? new Date(ev.end) : start;
             const time = `${('0'+start.getHours()).slice(-2)}:${('0'+start.getMinutes()).slice(-2)} - ${('0'+end.getHours()).slice(-2)}:${('0'+end.getMinutes()).slice(-2)}`;
             const row = tbody.insertRow();
-            row.insertCell().textContent = ev.title;
-            row.insertCell().textContent = `${start.getFullYear()}/${start.getMonth() + 1}/${start.getDate()}`;
-            row.insertCell().textContent = time;
+            row.insertCell().textContent = ev.title; row.insertCell().textContent = `${start.getFullYear()}/${start.getMonth() + 1}/${start.getDate()}`; row.insertCell().textContent = time;
         });
     }
 
@@ -328,9 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
     [listPopup, detailPopup].forEach(p => p.addEventListener('click', e => { if (e.target === p) p.style.display = 'none'; }));
     document.getElementById('popup-search-box').addEventListener('input', e => {
         const searchTerm = e.target.value.toLowerCase();
-        document.querySelectorAll('#event-list-table tbody tr').forEach(row => {
-            row.style.display = row.cells[0].textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
-        });
+        document.querySelectorAll('#event-list-table tbody tr').forEach(row => { row.style.display = row.cells[0].textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; });
     });
     updateEventList();
 });
