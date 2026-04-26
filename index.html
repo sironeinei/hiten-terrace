@@ -76,7 +76,7 @@
 </head>
 <body>
 <div id="top-bar">
-    <div class="update-time">更新：4/26　17：07</div>
+    <div class="update-time">更新：4/26　17：28</div>
     <h2>キッチンカー出店カレンダー</h2>
     <button id="show-list-button" title="予定店舗一覧">
         <span class="btn-text">予定店舗一覧</span>
@@ -155,9 +155,15 @@ document.addEventListener('DOMContentLoaded', function() {
         hoverPopup.style.display = 'none';
     }
 
+    // ★ Todayボタンのテキストを直接書き換える関数
+    function updateTodayButton() {
+        const todayBtn = document.querySelector('.fc-today-button');
+        if (todayBtn) {
+            todayBtn.innerText = window.innerWidth < 768 ? '今月' : '今日';
+        }
+    }
+
     const initialViewMode = window.innerWidth < 768 ? 'listMonth' : 'dayGridMonth';
-    
-    // ★ カレンダーの初期高さを、スマホの場合は画面高さいっぱいに広げる
     const initialHeight = window.innerWidth < 768 ? 'calc(100vh - 100px)' : undefined;
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -168,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         events: events,
         editable: false,
         height: initialHeight,
+        
         eventClick: info => openDetailPopup(info.event),
         dayMaxEvents: true,
         displayEventTime: false,
@@ -184,6 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     calendar.changeView('dayGridMonth');
                 }
             }
+            updateTodayButton(); // リサイズ時にテキスト更新
         },
 
         dayCellDidMount: function(arg) {
@@ -221,11 +229,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (calendar.view.type === 'dayGridMonth') {
                 addDayHoverListeners();
             }
+            updateTodayButton(); // 表示月変更時などにテキストを再適用
         },
         viewDidMount: () => {
             if (calendar.view.type === 'dayGridMonth') {
                 addDayHoverListeners();
             }
+            updateTodayButton(); // 初期描画時にテキスト適用
         }
     });
     calendar.render();
