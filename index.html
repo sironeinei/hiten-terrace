@@ -45,7 +45,7 @@
   .fc .fc-daygrid-day-number {float:none !important; padding:0 !important;}
   .fc .day-cell-time {font-size:0.7em; font-weight:bold; color:#e67e22; line-height:1; margin-right:auto;}
 
-  @media screen and (max-width: 768px) {
+  @media screen and (max-width: 1000px) {
       #top-bar {padding:8px 5px;}
       .update-time {font-size:10px;}
       #top-bar h2 {font-size:1em;}
@@ -61,7 +61,7 @@
 </head>
 <body>
 <div id="top-bar">
-    <div class="update-time">更新:4/27 18:10</div>
+    <div class="update-time">更新:4/27 18:22</div>
     <h2>キッチンカー出店カレンダー</h2>
     <button id="show-list-button" title="予定店舗一覧"><span class="btn-text">予定店舗一覧</span><span class="btn-icon">📋</span></button>
 </div>
@@ -126,18 +126,18 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleDayMouseLeave() { hoverPopup.style.display = 'none'; }
     function updateTodayButton() {
         const todayBtn = document.querySelector('.fc-today-button');
-        if (todayBtn) { todayBtn.innerText = window.innerWidth < 768 ? '今月' : '今日'; }
+        if (todayBtn) { todayBtn.innerText = window.innerWidth < 1000 ? '今月' : '今日'; }
     }
 
-    const initialViewMode = window.innerWidth < 768 ? 'listMonth' : 'dayGridMonth';
-    const initialHeight = window.innerWidth < 768 ? 'calc(100vh - 100px)' : 'auto';
+    const initialViewMode = window.innerWidth < 1000 ? 'listMonth' : 'dayGridMonth';
+    const initialHeight = window.innerWidth < 1000 ? 'calc(100vh - 100px)' : 'auto';
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'ja', headerToolbar: { left: 'today', center: 'title', right: 'prev,next' },
         initialView: initialViewMode, firstDay: 1, events: events, editable: false, height: initialHeight,
         eventClick: info => openDetailPopup(info.event), dayMaxEvents: true, displayEventTime: false,
         windowResize: function(arg) {
-            if (window.innerWidth < 768) {
+            if (window.innerWidth < 1000) {
                 calendar.setOption('height', 'calc(100vh - 100px)');
                 if (calendar.view.type !== 'listMonth') calendar.changeView('listMonth');
             } else {
