@@ -59,7 +59,7 @@
 </head>
 <body>
 <div id="top-bar">
-    <div class="update-time">更新:4/27 15:56</div>
+    <div class="update-time">更新:4/27 17:01</div>
     <h2>キッチンカー出店カレンダー</h2>
     <button id="show-list-button" title="予定店舗一覧"><span class="btn-text">予定店舗一覧</span><span class="btn-icon">📋</span></button>
 </div>
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const initialViewMode = window.innerWidth < 768 ? 'listMonth' : 'dayGridMonth';
-    const initialHeight = window.innerWidth < 768 ? 'calc(100vh - 100px)' : undefined;
+    const initialHeight = window.innerWidth < 768 ? 'calc(100vh - 100px)' : 'auto';
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'ja', headerToolbar: { left: 'today', center: 'title', right: 'prev,next' },
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 calendar.setOption('height', 'calc(100vh - 100px)');
                 if (calendar.view.type !== 'listMonth') calendar.changeView('listMonth');
             } else {
-                calendar.setOption('height', undefined);
+                calendar.setOption('height','auto');
                 if (calendar.view.type !== 'dayGridMonth') calendar.changeView('dayGridMonth');
             }
             updateTodayButton(); 
