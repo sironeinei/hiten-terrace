@@ -12,14 +12,18 @@
 <style>
   body {font-family:sans-serif;background-color:#f4f4f4;padding:0;margin:0; -webkit-text-size-adjust: 100%; text-size-adjust: 100%;}
   #top-bar {background:#fff; padding:10px 15px; border-bottom:1px solid #ddd; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px;}
-  .update-time {font-size:12px; color:#666; white-space:nowrap; justify-self:start;}
+  
+  /* ★ 追加・修正レイアウト */
+  .left-group {display:flex; align-items:center; gap:10px; justify-self:start;}
+  .right-group {display:flex; align-items:center; gap:10px; justify-self:end;}
+  .update-time {font-size:12px; color:#666; white-space:nowrap;}
+  
   #top-bar h2 {margin:0; font-size:1.3em; color:#ff8c00; font-family:'Noto Sans JP', sans-serif; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; justify-self:center;}
-  #top-bar button {padding:6px 12px; border-radius:4px; border:1px solid #ccc; font-size:14px; background-color:#6c757d; color:white; cursor:pointer; white-space:nowrap; justify-self:end;}
+  #top-bar button {padding:6px 12px; border-radius:4px; border:1px solid #ccc; font-size:14px; background-color:#6c757d; color:white; cursor:pointer; white-space:nowrap;}
   #top-bar button:hover {background-color:#5a6268;}
   .btn-icon {display:none;}
   #calendar-container {padding:20px; background:#fff; margin:20px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
   
-  /* カレンダー見出しを完全な中央に配置 */
   .fc .fc-toolbar { display: grid !important; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; margin-bottom: 1em; }
   .fc .fc-toolbar-chunk:first-child { justify-self: start; display: flex; gap: 5px; }
   .fc .fc-toolbar-chunk:nth-child(2) { justify-self: center; }
@@ -48,7 +52,6 @@
   #day-hover-popup {position:absolute; display:none; background-color:rgba(0,0,0,0.85); color:white; padding:10px 15px; border-radius:6px; z-index:1001; max-width:300px; box-shadow:0 4px 8px rgba(0,0,0,0.2); pointer-events:none; font-size:0.9em; line-height:1.6;}
   #day-hover-popup h3 {margin:0 0 8px 0; font-size:1em; padding-bottom:5px; border-bottom:1px solid #555;}
   #day-hover-popup div {margin-bottom:4px;}
-  #day-hover-popup div:last-child {margin-bottom:0;}
   .fc .fc-daygrid-day-top {display:flex; flex-direction:row; justify-content:flex-end; align-items:baseline; padding:2px 4px; width:100%; box-sizing:border-box;}
   .fc .fc-daygrid-day-number {float:none !important; padding:0 !important;}
   .fc .day-cell-time {font-size:0.7em; font-weight:bold; color:#e67e22; line-height:1; margin-right:auto;}
@@ -69,12 +72,30 @@
 </head>
 <body>
 <div id="top-bar">
-    <div class="update-time">更新:5/1 22:13</div>
+    <div class="left-group">
+        <button id="show-qr-button" title="QRコード表示"><span class="btn-text">QR共有</span><span class="btn-icon">📱</span></button>
+        <div class="update-time">更新:6/30 11:09</div>
+    </div>
     <h2>キッチンカー出店カレンダー</h2>
-    <button id="show-list-button" title="予定店舗一覧"><span class="btn-text">予定店舗一覧</span><span class="btn-icon">📋</span></button>
+    <div class="right-group">
+        <button id="refresh-button" title="最新情報に更新"><span class="btn-text">情報更新</span><span class="btn-icon">🔄</span></button>
+        <button id="show-list-button" title="予定店舗一覧"><span class="btn-text">予定店舗一覧</span><span class="btn-icon">📋</span></button>
+    </div>
 </div>
 <div id="calendar-container"><div id="calendar"></div></div>
 <div id="day-hover-popup"></div>
+
+<!-- ★ QRコード表示ポップアップ -->
+<div id="qr-popup" class="popup-overlay">
+  <div class="popup-content" style="max-width:300px; text-align:center;">
+    <div class="popup-header"><h2>共有用QRコード</h2></div>
+    <div class="popup-body">
+      <img id="qr-code-img" src="" alt="QR Code" style="width:200px; height:200px;">
+      <p style="font-size:12px; color:#666;">このサイトのURLです<br>読み取ってシェアできます</p>
+    </div>
+    <div class="popup-footer" style="justify-content:center;"><button id="close-qr-popup-button" style="padding:6px 12px; border-radius:4px; border:1px solid #ccc; background-color:#6c757d; color:white; cursor:pointer;">閉じる</button></div>
+  </div>
+</div>
 
 <div id="event-list-popup" class="popup-overlay">
   <div class="popup-content">
@@ -106,9 +127,22 @@
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
     const hoverPopup = document.getElementById('day-hover-popup');
-    const events = [{"id":"1777276960163-0.9551624422650562","title":"Rock Cafe","start":"2026-05-02T11:00:00","end":"2026-05-02T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777276960163-0.8324555970540399","title":"Rock Cafe","start":"2026-05-03T11:00:00","end":"2026-05-03T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777276960163-0.07746342417967955","title":"Rock Cafe","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777276960163-0.9533266179856363","title":"Rock Cafe","start":"2026-05-23T11:00:00","end":"2026-05-23T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1777276960164-0.7982784490495184","title":"たこ焼きMaRuHaChi","start":"2026-04-19T11:00:00","end":"2026-04-19T19:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777276960164-0.02692105315978577","title":"たこ焼きMaRuHaChi","start":"2026-05-24T11:00:00","end":"2026-05-24T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777276960164-0.3748637239047372","title":"たこ焼きMaRuHaChi","start":"2026-05-31T11:00:00","end":"2026-05-31T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1777276960164-0.5073863672159526","title":"一縁（ひより）","start":"2026-05-02T11:00:00","end":"2026-05-02T19:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777276960164-0.7652786531755484","title":"一縁（ひより）","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777276960164-0.45273425706030435","title":"一縁（ひより）","start":"2026-05-30T11:00:00","end":"2026-05-30T16:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1777276960164-0.27622954214561746","title":"251（ニコイチ）","start":"2026-05-03T11:00:00","end":"2026-05-03T19:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1777276960164-0.0062532642779215","title":"251（ニコイチ）","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1777276960164-0.8031024787174736","title":"栄好 (焼肉空志)","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}}];
-    const firstDaySetting = 0; // ★ 設定画面で保存された曜日設定を反映
+    const events = [{"id":"1782785356032-0.9272638741764127","title":"Rock Cafe","start":"2026-05-02T11:00:00","end":"2026-05-02T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.8720500043865654","title":"Rock Cafe","start":"2026-05-03T11:00:00","end":"2026-05-03T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.27335839526774686","title":"Rock Cafe","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.3139257311795909","title":"Rock Cafe","start":"2026-05-23T11:00:00","end":"2026-05-23T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.28102019542452883","title":"Rock Cafe","start":"2026-06-14T11:00:00","end":"2026-06-14T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.45715981600551914","title":"Rock Cafe","start":"2026-06-21T11:00:00","end":"2026-06-21T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.4829439862703848","title":"Rock Cafe","start":"2026-07-05T11:00:00","end":"2026-07-05T16:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.45001727874587394","title":"Rock Cafe","start":"2026-07-19T11:00:00","end":"2026-07-19T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.6447186849212899","title":"Rock Cafe","start":"2026-07-20T11:00:00","end":"2026-07-20T19:30:00","allDay":false,"extendedProps":{"description":"ホットドッグ、コーヒー","instagramUrl":"https://www.instagram.com/rockcafe_nara/"}},{"id":"1782785356032-0.16515814865074485","title":"〇ちゃんKITCHEN","start":"2026-07-05T11:00:00","end":"2026-07-05T16:30:00","allDay":false,"extendedProps":{"description":"唐揚げ","instagramUrl":"https://www.instagram.com/maruchan9kitchen/"}},{"id":"1782785356032-0.17016132416655416","title":"たこ焼きMaRuHaChi","start":"2026-04-19T11:00:00","end":"2026-04-19T19:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.2644522495488564","title":"たこ焼きMaRuHaChi","start":"2026-05-24T11:00:00","end":"2026-05-24T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.715400442020214","title":"たこ焼きMaRuHaChi","start":"2026-05-31T11:00:00","end":"2026-05-31T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.9882665315852824","title":"たこ焼きMaRuHaChi","start":"2026-06-13T11:00:00","end":"2026-06-13T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.6637764740379385","title":"たこ焼きMaRuHaChi","start":"2026-06-14T11:00:00","end":"2026-06-14T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.08167450504107787","title":"たこ焼きMaRuHaChi","start":"2026-06-27T11:00:00","end":"2026-06-27T16:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.7509069018062218","title":"たこ焼きMaRuHaChi","start":"2026-07-18T11:00:00","end":"2026-07-18T19:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.6927285166531318","title":"たこ焼きMaRuHaChi","start":"2026-07-19T11:00:00","end":"2026-07-19T19:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.4244473737588007","title":"たこ焼きMaRuHaChi","start":"2026-07-26T11:00:00","end":"2026-07-26T19:30:00","allDay":false,"extendedProps":{"description":"たこ焼き","instagramUrl":"https://www.instagram.com/maruhachi8._/"}},{"id":"1782785356032-0.900476670293549","title":"一縁（ひより）","start":"2026-05-02T11:00:00","end":"2026-05-02T19:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1782785356032-0.5528081289522083","title":"一縁（ひより）","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1782785356032-0.09832363845486214","title":"一縁（ひより）","start":"2026-05-30T11:00:00","end":"2026-05-30T16:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1782785356032-0.235266066644241","title":"一縁（ひより）","start":"2026-07-25T11:00:00","end":"2026-07-25T19:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1782785356032-0.9712340917832164","title":"一縁（ひより）","start":"2026-07-26T11:00:00","end":"2026-07-26T19:30:00","allDay":false,"extendedProps":{"description":"広島風お好み焼き","instagramUrl":""}},{"id":"1782785356032-0.4840774831768332","title":"251（ニコイチ）","start":"2026-05-03T11:00:00","end":"2026-05-03T19:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1782785356032-0.5476287560913439","title":"251（ニコイチ）","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1782785356032-0.45313709404455627","title":"251（ニコイチ）","start":"2026-06-14T11:00:00","end":"2026-06-14T16:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1782785356032-0.6498550481400887","title":"251（ニコイチ）","start":"2026-06-21T11:00:00","end":"2026-06-21T16:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1782785356032-0.6578428139841973","title":"251（ニコイチ）","start":"2026-07-19T11:00:00","end":"2026-07-19T19:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1782785356032-0.3247727523993321","title":"251（ニコイチ）","start":"2026-07-20T11:00:00","end":"2026-07-20T19:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1782785356032-0.7766159045935598","title":"251（ニコイチ）","start":"2026-07-26T11:00:00","end":"2026-07-26T19:30:00","allDay":false,"extendedProps":{"description":"クレープ","instagramUrl":"https://www.instagram.com/251nicoichi_crepe/"}},{"id":"1782785356032-0.1653358663175325","title":"焼肉空志","start":"2026-05-06T11:00:00","end":"2026-05-06T16:30:00","allDay":false,"extendedProps":{"description":"牛すじカレー・牛すじポン酢","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}},{"id":"1782785356032-0.75415901352843","title":"焼肉空志","start":"2026-06-13T11:00:00","end":"2026-06-13T16:30:00","allDay":false,"extendedProps":{"description":"牛すじカレー・牛すじポン酢","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}},{"id":"1782785356032-0.8914987689423229","title":"焼肉空志","start":"2026-06-14T11:00:00","end":"2026-06-14T16:30:00","allDay":false,"extendedProps":{"description":"牛すじカレー・牛すじポン酢","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}},{"id":"1782785356032-0.5476897465794016","title":"焼肉空志","start":"2026-06-20T11:00:00","end":"2026-06-20T16:30:00","allDay":false,"extendedProps":{"description":"牛すじカレー・牛すじポン酢","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}},{"id":"1782785356032-0.33729847595757767","title":"焼肉空志","start":"2026-06-21T11:00:00","end":"2026-06-21T16:30:00","allDay":false,"extendedProps":{"description":"牛すじカレー・牛すじポン酢","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}},{"id":"1782785356032-0.6276117389411972","title":"焼肉空志","start":"2026-07-25T11:00:00","end":"2026-07-25T19:30:00","allDay":false,"extendedProps":{"description":"牛すじカレー・牛すじポン酢","instagramUrl":"https://www.instagram.com/yakiniku_sorashi/"}},{"id":"1782785356032-0.7451559853226994","title":"炎（ほむら）","start":"2026-06-28T11:00:00","end":"2026-06-28T16:30:00","allDay":false,"extendedProps":{"description":"やきとり","instagramUrl":""}}];
+    const firstDaySetting = 1; 
     
+    // ★ QRボタン＆更新ボタンの処理追加
+    const qrPopup = document.getElementById('qr-popup');
+    document.getElementById('show-qr-button').addEventListener('click', () => {
+        const currentUrl = encodeURIComponent(window.location.href.split('#')[0].split('?')[0]);
+        document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${currentUrl}`;
+        qrPopup.style.display = 'flex';
+    });
+    document.getElementById('close-qr-popup-button').addEventListener('click', () => qrPopup.style.display = 'none');
+    
+    document.getElementById('refresh-button').addEventListener('click', () => {
+        location.reload(); 
+    });
+
     function addDayHoverListeners() {
         document.querySelectorAll('.fc-daygrid-day').forEach(cell => {
             cell.removeEventListener('mouseenter', handleDayMouseEnter);
@@ -256,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('show-list-button').addEventListener('click', () => { updateEventList(); listPopup.style.display = 'flex'; });
     document.getElementById('close-list-popup-button').addEventListener('click', () => listPopup.style.display = 'none');
     document.getElementById('close-detail-popup-button').addEventListener('click', () => detailPopup.style.display = 'none');
-    [listPopup, detailPopup].forEach(p => p.addEventListener('click', e => { if (e.target === p) p.style.display = 'none'; }));
+    [listPopup, detailPopup, qrPopup].forEach(p => p.addEventListener('click', e => { if (e.target === p) p.style.display = 'none'; }));
     document.getElementById('popup-search-box').addEventListener('input', e => {
         const searchTerm = e.target.value.toLowerCase();
         document.querySelectorAll('#event-list-table tbody tr').forEach(row => { row.style.display = row.cells[0].textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; });
